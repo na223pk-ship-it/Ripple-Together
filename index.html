@@ -1,0 +1,568 @@
+<!-- Declares this file as HTML5 so the browser uses modern standards mode. -->
+<!DOCTYPE html>
+<!-- Root HTML element; language is English and dark theme is the default at first load. -->
+<html lang="en" data-theme="dark">
+<!-- Head contains metadata, fonts, styles, and anything the browser should load before rendering. -->
+<head>
+  <!-- Sets UTF-8 text encoding so letters, symbols, and punctuation render correctly. -->
+  <meta charset="UTF-8" />
+  <!-- Makes the layout scale correctly on phones and tablets instead of shrinking the page. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Browser tab title shown in the tab bar and bookmarks. -->
+  <title>Ripple Presence</title>
+  <!-- Opens an early network connection to the font server so custom fonts load faster. -->
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <!-- Loads the Satoshi and Cabinet Grotesk font families from Fontshare. -->
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=cabinet-grotesk@500,700,800&display=swap" rel="stylesheet" />
+    /* Start of the CSS block that controls the page layout, colors, motion, and visuals. */
+  <style>
+        /* Light-theme design tokens: shared variables for spacing, typography, colors, and shadows. */
+    :root, [data-theme="light"] {
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+      --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
+      --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem;
+      --space-12: 3rem; --space-16: 4rem; --radius-md: 0.5rem; --radius-lg: 0.75rem;
+      --radius-xl: 1rem; --radius-full: 9999px;
+      --color-bg: #f7f6f2; --color-surface: #f9f8f5; --color-surface-2: #fbfbf9;
+      --color-border: #d4d1ca; --color-text: #28251d; --color-text-muted: #7a7974;
+      --color-primary: #01696f; --color-primary-hover: #0c4e54; --color-text-inverse: #f9f8f4;
+      --shadow-lg: 0 12px 32px oklch(0.2 0.01 80 / 0.12);
+      --font-body: 'Satoshi', 'Inter', sans-serif;
+      --font-display: 'Cabinet Grotesk', 'Inter', sans-serif;
+      --transition-interactive: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+        /* Dark-theme overrides: these replace the light values when dark mode is active. */
+    [data-theme="dark"] {
+      --color-bg: #171614; --color-surface: #1c1b19; --color-surface-2: #201f1d;
+      --color-border: #393836; --color-text: #cdccca; --color-text-muted: #979592;
+      --color-primary: #4f98a3; --color-primary-hover: #72b4be; --color-text-inverse: #171614;
+      --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.4);
+    }
+        /* Makes width and height calculations predictable by including borders and padding in element sizes. */
+    *, *::before, *::after { box-sizing: border-box; }
+        /* Global browser-level text rendering improvements for sharper, smoother typography. */
+    html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+        /* Styles the full page background, default text settings, and prevents scrollbars for the immersive stage. */
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      color: var(--color-text);
+      background:
+        radial-gradient(circle at 20% 20%, color-mix(in oklab, var(--color-primary) 18%, transparent), transparent 32%),
+        radial-gradient(circle at 80% 30%, color-mix(in oklab, var(--color-primary) 10%, transparent), transparent 30%),
+        linear-gradient(180deg, color-mix(in oklab, var(--color-bg) 82%, black), var(--color-bg));
+    }
+    button { font: inherit; }
+        /* Keeps accessibility text available to screen readers while hiding it visually. */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+        /* Hidden accessibility shortcut that appears when keyboard users tab into the page. */
+    .skip-link {
+      position: absolute; left: var(--space-4); top: -3rem; padding: var(--space-3) var(--space-4);
+      background: var(--color-primary); color: var(--color-text-inverse); border-radius: var(--radius-md); z-index: 50;
+    }
+        /* Moves the skip link onscreen when it receives keyboard focus. */
+    .skip-link:focus { top: var(--space-4); }
+        /* Heads-up display container pinned at the top for controls and instructions. */
+    .hud {
+      position: fixed; inset: var(--space-4) var(--space-4) auto var(--space-4); z-index: 20;
+      display: flex; justify-content: space-between; gap: var(--space-4); align-items: flex-start; pointer-events: none;
+    }
+        /* Frosted-glass information card that holds the title and the controls. */
+    .panel {
+      pointer-events: auto;
+      width: min(34rem, calc(100vw - 2rem));
+      padding: var(--space-5);
+      background: color-mix(in oklab, var(--color-surface) 82%, transparent);
+      border: 1px solid color-mix(in oklab, var(--color-text) 12%, transparent);
+      backdrop-filter: blur(18px);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+    }
+        /* Aligns the logo and heading into a neat horizontal brand row. */
+    .brand { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+    .brand svg { width: 2.5rem; height: 2.5rem; color: var(--color-primary); }
+        /* Large display title styling using the chosen heading font. */
+    h1 {
+      margin: 0; font-family: var(--font-display); font-size: var(--text-xl); line-height: 1;
+      letter-spacing: -0.03em;
+    }
+        /* Secondary descriptive text uses a softer color so the title stays dominant. */
+    .lede, .meta { margin: 0; color: var(--color-text-muted); }
+        /* Flexible row that wraps the controls neatly on smaller screens. */
+    .controls { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
+        /* Shared pill-like appearance for status chips, buttons, and text input wrappers. */
+    .chip, .toggle, .field {
+      border: 1px solid color-mix(in oklab, var(--color-text) 10%, transparent);
+      background: color-mix(in oklab, var(--color-surface-2) 88%, transparent);
+      border-radius: var(--radius-full);
+      min-height: 44px;
+      color: var(--color-text);
+    }
+        /* Centers label content inside chips and buttons. */
+    .chip, .toggle { padding: 0 var(--space-4); display: inline-flex; align-items: center; gap: var(--space-2); }
+        /* Makes the buttons interactive and animates their hover/press behavior. */
+    .toggle { cursor: pointer; transition: transform var(--transition-interactive), background var(--transition-interactive); }
+        /* Light hover tint so the button gives visual feedback before clicking. */
+    .toggle:hover { background: color-mix(in oklab, var(--color-primary) 12%, var(--color-surface-2)); }
+        /* Tiny scale-down effect to simulate button press depth. */
+    .toggle:active { transform: scale(0.98); }
+        /* Input wrapper styling so text fields match the rounded UI language. */
+    .field {
+      display: inline-flex; align-items: center; padding: 0 var(--space-3); gap: var(--space-2);
+      min-width: min(18rem, 100%);
+    }
+        /* Removes native input chrome so the custom wrapper becomes the visible control. */
+    .field input {
+      width: 100%; background: transparent; border: 0; outline: 0; color: inherit; min-height: 42px;
+      font: inherit;
+    }
+        /* Softens placeholder text so it reads as guidance instead of real content. */
+    .field input::placeholder { color: var(--color-text-muted); }
+        /* Main semantic container that stretches to full viewport height. */
+    main { position: relative; min-height: 100vh; }
+        /* Fullscreen interactive surface where cursors and ripples are drawn. */
+    #stage { position: fixed; inset: 0; overflow: hidden; cursor: none; }
+        /* Subtle background grid adds depth and spatial orientation without distracting from the ripples. */
+    .grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(color-mix(in oklab, var(--color-text) 0.08%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in oklab, var(--color-text) 0.08%, transparent) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at center, black 45%, transparent 100%);
+      opacity: 0.45;
+    }
+        /* Two absolute layers let ripples and cursors stack independently over the stage. */
+    .ripple-layer, .cursor-layer { position: absolute; inset: 0; }
+        /* Visual style for each user presence marker: a glowing circular cursor node. */
+    .cursor {
+      position: absolute; width: 22px; height: 22px; margin-left: -11px; margin-top: -11px;
+      border-radius: 50%; pointer-events: none; transform: translate3d(0,0,0);
+      border: 1px solid color-mix(in oklab, white 50%, transparent);
+      box-shadow: 0 0 0 1px color-mix(in oklab, black 16%, transparent), 0 0 30px var(--cursor-color);
+      background: radial-gradient(circle at 35% 35%, white, color-mix(in oklab, var(--cursor-color) 75%, white) 28%, var(--cursor-color) 70%);
+      transition: transform 60ms linear;
+    }
+        /* Small floating name tag displayed next to each cursor. */
+    .cursor::after {
+      content: attr(data-name);
+      position: absolute; left: 1.1rem; top: -0.2rem; white-space: nowrap;
+      font-size: var(--text-xs); letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--color-text); background: color-mix(in oklab, var(--color-surface) 88%, transparent);
+      border: 1px solid color-mix(in oklab, var(--color-text) 10%, transparent);
+      padding: 0.18rem 0.45rem; border-radius: var(--radius-full);
+    }
+        /* Slightly smaller styling for the local user so the screen feels balanced. */
+    .cursor.self { width: 18px; height: 18px; margin-left: -9px; margin-top: -9px; }
+        /* Each ripple is an absolutely positioned animated ring whose size and opacity change over time. */
+    .ripple {
+      position: absolute; left: 0; top: 0; width: var(--size); height: var(--size);
+      margin-left: calc(var(--size) / -2); margin-top: calc(var(--size) / -2);
+      border-radius: 50%; pointer-events: none;
+      border: 1.5px solid color-mix(in oklab, var(--ripple-color) 72%, white 8%);
+      box-shadow: 0 0 40px color-mix(in oklab, var(--ripple-color) 28%, transparent), inset 0 0 40px color-mix(in oklab, var(--ripple-color) 14%, transparent);
+      background: radial-gradient(circle, color-mix(in oklab, var(--ripple-color) 22%, transparent) 0%, transparent 58%);
+      transform: translate3d(var(--x), var(--y), 0) scale(var(--scale));
+      opacity: var(--opacity);
+      transition: transform 90ms linear, opacity 180ms linear;
+      mix-blend-mode: screen;
+    }
+        /* Small helper label in the corner with a quick usage hint. */
+    .footer-note {
+      position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: 20;
+      padding: var(--space-3) var(--space-4); border-radius: var(--radius-full);
+      background: color-mix(in oklab, var(--color-surface) 76%, transparent);
+      border: 1px solid color-mix(in oklab, var(--color-text) 10%, transparent);
+      color: var(--color-text-muted); backdrop-filter: blur(16px); font-size: var(--text-xs);
+    }
+        /* Mobile layout adjustments so the overlay and labels fit narrow screens. */
+    @media (max-width: 720px) {
+          /* Heads-up display container pinned at the top for controls and instructions. */
+      .hud { inset: var(--space-3) var(--space-3) auto var(--space-3); }
+          /* Frosted-glass information card that holds the title and the controls. */
+      .panel { padding: var(--space-4); }
+          /* Small helper label in the corner with a quick usage hint. */
+      .footer-note { left: var(--space-3); right: var(--space-3); bottom: var(--space-3); border-radius: var(--radius-lg); }
+          /* Small floating name tag displayed next to each cursor. */
+      .cursor::after { display: none; }
+    }
+        /* Accessibility rule that removes animations for users who prefer less motion. */
+    @media (prefers-reduced-motion: reduce) {
+      .cursor, .ripple, .toggle { transition: none !important; }
+    }
+    /* End of the CSS block. */
+  </style>
+</head>
+<!-- Body contains the visible interface and the interactive ripple experience. -->
+<body>
+  <!-- Keyboard users can jump directly to the interactive experience with this link. -->
+  <a class="skip-link" href="#experience">Skip to experience</a>
+  <!-- Main content wrapper for accessibility and document structure. -->
+  <main id="experience">
+    <!-- Overlay region for controls; visually floats above the ripple field. -->
+    <div class="hud" aria-hidden="false">
+      <!-- Intro and control panel with semantic section meaning. -->
+      <section class="panel" aria-label="Controls and status">
+        <!-- Brand block groups the logo with the main explanatory heading. -->
+        <div class="brand">
+                    <!-- Inline SVG logo built from concentric circles to echo the ripple idea. -->
+          <svg viewBox="0 0 64 64" fill="none" aria-label="Ripple Presence logo">
+            <circle cx="32" cy="32" r="8" stroke="currentColor" stroke-width="4"></circle>
+            <circle cx="32" cy="32" r="18" stroke="currentColor" stroke-width="3" opacity="0.72"></circle>
+            <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="2" opacity="0.4"></circle>
+          </svg>
+          <div>
+                        <!-- Main page heading; there should be one h1 per page for good semantics. -->
+            <h1>Ripple Presence</h1>
+                        <!-- Short description that explains the concept in plain language. -->
+            <p class="lede">Each user becomes a moving water source. Ripples collide, brighten, and breathe across the full page.</p>
+          </div>
+        </div>
+                <!-- Extra note describing the two connection modes: local tabs and optional WebSocket rooms. -->
+        <p class="meta">Works instantly across multiple tabs in the same browser. Add a WebSocket room URL to sync across different devices.</p>
+                <!-- Container for the live count, name field, room field, and action buttons. -->
+        <div class="controls">
+                    <!-- Live status pill that is updated in JavaScript with the current number of active presences. -->
+          <div class="chip" id="peerCount" aria-live="polite">1 presence</div>
+                    <!-- Form label wrapper improves accessibility by associating text inputs with meaning. -->
+          <label class="field">
+            <span class="sr-only">Display name</span>
+                        <!-- Input where the user chooses the label shown next to their cursor. -->
+            <input id="nameInput" maxlength="18" placeholder="Your name" />
+          </label>
+                    <!-- Form label wrapper improves accessibility by associating text inputs with meaning. -->
+          <label class="field">
+            <span class="sr-only">WebSocket room URL</span>
+                        <!-- Optional WebSocket address for syncing the experience across different devices. -->
+            <input id="socketInput" placeholder="Optional wss://server.example/room" />
+          </label>
+                    <!-- Button that opens a WebSocket connection if the user provides a server URL. -->
+          <button class="toggle" id="connectBtn" type="button">Connect room</button>
+                    <!-- Button for switching the page between dark and light themes. -->
+          <button class="toggle" id="themeBtn" type="button" aria-label="Switch theme">Toggle theme</button>
+        </div>
+      </section>
+    </div>
+
+        <!-- The fullscreen stage that visually hosts the grid, ripples, and user cursors. -->
+    <section id="stage" aria-label="Realtime ripple field">
+            <!-- Decorative grid background layer. -->
+      <div class="grid"></div>
+            <!-- Layer where ripple DOM elements are inserted and animated. -->
+      <div class="ripple-layer" id="rippleLayer"></div>
+            <!-- Layer where each user cursor element is inserted and moved. -->
+      <div class="cursor-layer" id="cursorLayer"></div>
+    </section>
+
+        <!-- Small teaching hint telling you how to test multi-user behavior quickly. -->
+    <div class="footer-note">Open this page in two tabs to see the interaction immediately.</div>
+  </main>
+
+    <!-- Start of the JavaScript that powers realtime syncing, ripple generation, and rendering. -->
+  <script>
+        // Grab the main stage element so JavaScript can listen to pointer activity in that area.
+    const stage = document.getElementById('stage');
+        // Reference the layer where ripple rings will be created and appended.
+    const rippleLayer = document.getElementById('rippleLayer');
+        // Reference the layer where cursor markers for each user will be drawn.
+    const cursorLayer = document.getElementById('cursorLayer');
+        // UI element that shows how many users are currently represented on screen.
+    const peerCount = document.getElementById('peerCount');
+        // Text input used to rename the current user label.
+    const nameInput = document.getElementById('nameInput');
+        // Text input where a WebSocket URL can be provided for cross-device syncing.
+    const socketInput = document.getElementById('socketInput');
+        // Button that starts the WebSocket connection process.
+    const connectBtn = document.getElementById('connectBtn');
+        // Button that toggles the page theme between dark and light.
+    const themeBtn = document.getElementById('themeBtn');
+
+        // Small set of accent colors; each user gets one so their ripple field feels distinct.
+    const palette = ['#4f98a3', '#e8af34', '#d163a7', '#6daa45', '#5591c7', '#fdab43', '#a86fdf'];
+        // Create a short random ID so this browser tab can be recognized as one unique participant.
+    const clientId = Math.random().toString(36).slice(2, 10);
+        // Pick one color from the palette for this participant.
+    const color = palette[Math.floor(Math.random() * palette.length)];
+        // Use BroadcastChannel when available so multiple tabs in the same browser can exchange messages instantly.
+    const channel = 'BroadcastChannel' in window ? new BroadcastChannel('ripple-presence-room') : null;
+
+        // Holds the optional WebSocket connection; stays null until the user connects to a room.
+    let socket = null;
+        // Track the current theme choice in memory so the toggle knows what to switch to next.
+    let manualTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        // Store the pointer position plus velocity so ripple strength can react to movement speed.
+    let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2, vx: 0, vy: 0 };
+        // Timestamp guard used to throttle outgoing network updates and avoid spamming events.
+    let lastSent = 0;
+        // Timestamp guard used to space out ripple pulses over time.
+    let lastRippleAt = 0;
+        // Simple frame counter used for occasional cleanup work.
+    let frame = 0;
+
+        // Object describing the local user so the same rendering code can treat self and peers similarly.
+    const selfState = {
+      id: clientId,
+      name: 'You',
+      color,
+      x: mouse.x,
+      y: mouse.y,
+      lastSeen: performance.now(),
+      pulse: 0
+    };
+
+        // Map stores every active participant by ID for quick lookup and updates.
+    const peers = new Map([[clientId, selfState]]);
+        // Array tracks all currently animated ripples so each frame can update and remove them.
+    const ripples = [];
+
+        // Change the theme by updating the data-theme attribute on the root HTML element.
+    function setTheme(next) {
+      manualTheme = next;
+      document.documentElement.setAttribute('data-theme', next);
+    }
+
+        // When the theme button is clicked, switch between dark and light values.
+    themeBtn.addEventListener('click', () => {
+      setTheme(manualTheme === 'dark' ? 'light' : 'dark');
+    });
+
+        // Refresh the status chip text so the UI always matches the number of active users.
+    function updatePeerCount() {
+      peerCount.textContent = `${peers.size} ${peers.size === 1 ? 'presence' : 'presences'}`;
+    }
+
+        // Helper that forces a number to stay between a minimum and maximum.
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+        // Build the DOM element representing one user cursor and attach it to the cursor layer.
+    function makeCursor(peer, isSelf = false) {
+      const el = document.createElement('div');
+      el.className = `cursor${isSelf ? ' self' : ''}`;
+      el.dataset.name = peer.name || 'Guest';
+      el.style.setProperty('--cursor-color', peer.color);
+      cursorLayer.appendChild(el);
+      peer.el = el;
+      return el;
+    }
+
+        // Make sure a peer already has a cursor element before rendering it.
+    function ensurePeer(peer) {
+      if (!peer.el) makeCursor(peer, peer.id === clientId);
+      return peer.el;
+    }
+
+        // Create one ripple ring at a given position, then push it into the animation list.
+    function spawnRipple(x, y, sourceColor, energy = 1, sourceId = 'system') {
+      const el = document.createElement('div');
+      el.className = 'ripple';
+      const baseSize = 44 + energy * 26;
+      el.style.setProperty('--size', `${baseSize}px`);
+      el.style.setProperty('--x', `${x}px`);
+      el.style.setProperty('--y', `${y}px`);
+      el.style.setProperty('--scale', 0.25);
+      el.style.setProperty('--opacity', 0.85);
+      el.style.setProperty('--ripple-color', sourceColor);
+      rippleLayer.appendChild(el);
+      ripples.push({ x, y, born: performance.now(), life: 1800 + energy * 500, color: sourceColor, energy, el, sourceId, boosted: false });
+    }
+
+        // Send the same message through local tab syncing and the optional WebSocket room.
+    function broadcast(payload) {
+      if (channel) channel.postMessage(payload);
+      if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(payload));
+    }
+
+        // Send the current cursor position and, when appropriate, emit a new ripple pulse event.
+    function publishState(forceRipple = false) {
+      const now = performance.now();
+      if (!forceRipple && now - lastSent < 24) return;
+      lastSent = now;
+      selfState.x = mouse.x;
+      selfState.y = mouse.y;
+      selfState.lastSeen = now;
+      selfState.name = nameInput.value.trim() || 'You';
+      broadcast({ type: 'presence', peer: { id: clientId, x: mouse.x, y: mouse.y, color, name: selfState.name, lastSeen: Date.now() } });
+      if (forceRipple || now - lastRippleAt > 150) {
+        lastRippleAt = now;
+        broadcast({ type: 'pulse', peerId: clientId, x: mouse.x, y: mouse.y, color, energy: clamp(Math.hypot(mouse.vx, mouse.vy) / 22, 0.35, 2.4) });
+        spawnRipple(mouse.x, mouse.y, color, clamp(Math.hypot(mouse.vx, mouse.vy) / 22, 0.4, 2.2), clientId);
+      }
+    }
+
+        // Update or create another user's state when a presence message arrives.
+    function mergePeer(data) {
+      if (!data || data.id === clientId) return;
+      const peer = peers.get(data.id) || { id: data.id, pulse: 0 };
+      peer.x = data.x;
+      peer.y = data.y;
+      peer.color = data.color || '#4f98a3';
+      peer.name = data.name || 'Guest';
+      peer.lastSeen = performance.now();
+      peers.set(data.id, peer);
+      ensurePeer(peer);
+          // Initialize the UI count before the animation starts.
+      updatePeerCount();
+    }
+
+        // Central message handler for presence updates, pulse events, and disconnect notices.
+    function handleMessage(payload) {
+      if (!payload || payload.peerId === clientId || payload.peer?.id === clientId) return;
+      if (payload.type === 'presence') mergePeer(payload.peer);
+      if (payload.type === 'pulse') {
+        const peer = peers.get(payload.peerId);
+        if (peer) peer.pulse = 1;
+        spawnRipple(payload.x, payload.y, payload.color || peer?.color || '#4f98a3', payload.energy || 1, payload.peerId);
+      }
+      if (payload.type === 'leave' && peers.has(payload.peerId)) {
+        const peer = peers.get(payload.peerId);
+        if (peer.el) peer.el.remove();
+        peers.delete(payload.peerId);
+            // Initialize the UI count before the animation starts.
+        updatePeerCount();
+      }
+    }
+
+        // Only wire BroadcastChannel listeners if the browser supports that API.
+    if (channel) {
+      channel.onmessage = (event) => handleMessage(event.data);
+      window.addEventListener('beforeunload', () => channel.postMessage({ type: 'leave', peerId: clientId }));
+    }
+
+        // Whenever the user edits their name, rebroadcast immediately so others see the new label.
+    nameInput.addEventListener('input', () => publishState(true));
+
+        // Try to open a WebSocket when the connect button is pressed.
+    connectBtn.addEventListener('click', () => {
+      const url = socketInput.value.trim();
+      if (!url) return;
+      if (socket) socket.close();
+      socket = new WebSocket(url);
+      connectBtn.textContent = 'Connecting…';
+      socket.addEventListener('open', () => {
+        connectBtn.textContent = 'Room connected';
+            // Immediately announce the current user so any other open tabs can discover this one.
+        publishState(true);
+      });
+      socket.addEventListener('message', (event) => {
+        try { handleMessage(JSON.parse(event.data)); } catch (error) { console.warn('Invalid room message', error); }
+      });
+      socket.addEventListener('close', () => { connectBtn.textContent = 'Connect room'; });
+      socket.addEventListener('error', () => { connectBtn.textContent = 'Retry room'; });
+    });
+
+        // Track pointer movement, compute velocity, and publish the new position.
+    window.addEventListener('pointermove', (event) => {
+      const prev = { x: mouse.x, y: mouse.y };
+      mouse.x = event.clientX;
+      mouse.y = event.clientY;
+      mouse.vx = mouse.x - prev.x;
+      mouse.vy = mouse.y - prev.y;
+      publishState(false);
+    }, { passive: true });
+
+        // On click or tap, emit a stronger ripple pulse right away at that exact position.
+    window.addEventListener('pointerdown', (event) => {
+      mouse.x = event.clientX;
+      mouse.y = event.clientY;
+      mouse.vx = 0;
+      mouse.vy = 0;
+          // Immediately announce the current user so any other open tabs can discover this one.
+      publishState(true);
+    });
+
+        // Animate every ripple over time and boost its look when it overlaps with another ripple.
+    function updateRipples(now) {
+      for (let i = ripples.length - 1; i >= 0; i -= 1) {
+        const ripple = ripples[i];
+        const age = now - ripple.born;
+        const t = age / ripple.life;
+        if (t >= 1) {
+          ripple.el.remove();
+          ripples.splice(i, 1);
+          continue;
+        }
+        let interactionBoost = 0;
+        for (const other of ripples) {
+          if (other === ripple) continue;
+          const dx = other.x - ripple.x;
+          const dy = other.y - ripple.y;
+          const distance = Math.hypot(dx, dy);
+          const threshold = 90 + (ripple.energy + other.energy) * 40;
+          if (distance < threshold) {
+            interactionBoost += (1 - distance / threshold) * 0.18;
+            if (!ripple.boosted && ripple.sourceId !== other.sourceId) {
+              ripple.boosted = true;
+              ripple.el.style.borderWidth = '2px';
+            }
+          }
+        }
+        const scale = 0.25 + t * (3.4 + ripple.energy * 0.5) + interactionBoost;
+        const opacity = Math.max(0, 0.85 - t * 0.9 + interactionBoost * 0.3);
+        ripple.el.style.setProperty('--scale', scale.toFixed(3));
+        ripple.el.style.setProperty('--opacity', opacity.toFixed(3));
+      }
+    }
+
+        // Remove remote users that have stopped sending updates for a while.
+    function cleanupPeers(now) {
+      for (const [id, peer] of peers.entries()) {
+        if (id === clientId) continue;
+        if (now - peer.lastSeen > 5000) {
+          if (peer.el) peer.el.remove();
+          peers.delete(id);
+        }
+      }
+          // Initialize the UI count before the animation starts.
+      updatePeerCount();
+    }
+
+        // Main animation loop: position cursors, fade pulses, update ripples, and schedule the next frame.
+    function render(now) {
+      frame += 1;
+      selfState.lastSeen = now;
+      ensurePeer(selfState).dataset.name = selfState.name;
+      selfState.el.style.transform = `translate3d(${selfState.x}px, ${selfState.y}px, 0) scale(1)`;
+
+      for (const peer of peers.values()) {
+        const el = ensurePeer(peer);
+        const pulse = peer.pulse || 0;
+        el.dataset.name = peer.name || 'Guest';
+        el.style.setProperty('--cursor-color', peer.color || color);
+        el.style.transform = `translate3d(${peer.x || 0}px, ${peer.y || 0}px, 0) scale(${1 + pulse * 0.5})`;
+        peer.pulse = Math.max(0, pulse - 0.04);
+      }
+
+      updateRipples(now);
+      if (frame % 120 === 0) cleanupPeers(now);
+          // Start the browser-driven animation loop.
+      requestAnimationFrame(render);
+    }
+
+        // Initialize the UI count before the animation starts.
+    updatePeerCount();
+        // Give the local user a sensible default display name.
+    nameInput.value = 'You';
+        // Create an opening ripple so the page does not feel empty on first load.
+    spawnRipple(mouse.x, mouse.y, color, 1.8, clientId);
+        // Immediately announce the current user so any other open tabs can discover this one.
+    publishState(true);
+        // Start the browser-driven animation loop.
+    requestAnimationFrame(render);
+    <!-- End of the JavaScript block. -->
+  </script>
+<!-- End of the visible page content. -->
+</body>
+<!-- End of the HTML document. -->
+</html>
